@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
 using Microsoft.Azure.Documents.Client;
-using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
 using SendGrid;
+using WebPush;
 
 namespace MarsOffice.Qeeps.Notifications
 {
@@ -16,6 +16,7 @@ namespace MarsOffice.Qeeps.Notifications
         private readonly HttpClient _accessClient;
         private readonly HttpClient _client;
         private readonly ISendGridClient _sendGridClient;
+        private readonly WebPushClient _webPushClient;
 
         public ProcessNotification(IConfiguration config, IHttpClientFactory httpClientFactory, ISendGridClient sendGridClient)
         {
@@ -23,6 +24,7 @@ namespace MarsOffice.Qeeps.Notifications
             _accessClient = httpClientFactory.CreateClient("access");
             _client = httpClientFactory.CreateClient();
             _sendGridClient = sendGridClient;
+            _webPushClient = new WebPushClient();
         }
 
         [FunctionName("ProcessNotification")]
