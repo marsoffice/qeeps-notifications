@@ -11,6 +11,7 @@ namespace MarsOffice.Qeeps.Notifications.Abstractions
         public string Title { get; set; }
         public string AbsoluteRouteUrl { get; set; }
         public bool IsRead { get; set; }
+        public Severity Severity { get; set; }
         public DateTimeOffset CreatedDate { get; set; }
         public DateTimeOffset? ReadDate { get; set; }
     }

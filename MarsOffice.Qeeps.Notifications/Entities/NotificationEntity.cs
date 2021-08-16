@@ -1,4 +1,5 @@
 using System;
+using MarsOffice.Qeeps.Notifications.Abstractions;
 using Newtonsoft.Json;
 
 namespace MarsOffice.Qeeps.Notifications.Entities
@@ -11,6 +12,7 @@ namespace MarsOffice.Qeeps.Notifications.Entities
         public string Message { get; set; }
         public string Title { get; set; }
         public string AbsoluteRouteUrl { get; set; }
+        public Severity Severity { get; set; }
         public bool IsRead { get; set; }
         public DateTimeOffset CreatedDate { get; set; }
         public DateTimeOffset? ReadDate { get; set; }
