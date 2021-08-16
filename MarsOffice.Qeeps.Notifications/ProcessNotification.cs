@@ -12,6 +12,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Polly;
@@ -39,7 +40,7 @@ namespace MarsOffice.Qeeps.Notifications
             _sendGridClient = sendGridClient;
             _webPushClient = new WebPushClient();
             _validator = validator;
-            _templates = _config.GetValue<IEnumerable<Template>>("Templates");
+            _templates = _config.GetSection("Templates").Get<IEnumerable<Template>>();
             _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["VapidPublicKey"], _config["VapidPrivateKey"]);
         }
 
@@ -51,9 +52,9 @@ namespace MarsOffice.Qeeps.Notifications
                 collectionName: "Notifications",
                 #if DEBUG
                 CreateIfNotExists = true,
-                PartitionKey = "/UserId",
+                PartitionKey = "UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<NotificationEntity> notificationsOut,
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient notificationsClient,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
@@ -61,7 +62,8 @@ namespace MarsOffice.Qeeps.Notifications
                 CreateIfNotExists = true,
                 PartitionKey = "UserId",
                 #endif
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient pushSubscriptionsClient
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient pushSubscriptionsClient,
+                ILogger logger
             )
         {
             await _validator.ValidateAndThrowAsync(dto);
@@ -129,16 +131,6 @@ namespace MarsOffice.Qeeps.Notifications
 
                 var foundTemplate = foundTemplates.Single(x => x.Language == lang);
 
-                if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(userDto.Email))
-                {
-                    var sgm = new SendGridMessage();
-                    sgm.SetSubject(foundTemplate.Title);
-                    sgm.SetFrom(_config["FromName"], _config["FromEmail"]);
-                    sgm.AddTo(userDto.Email);
-                    sgm.AddContent(MimeType.Html, foundTemplate.Message);
-                    await _sendGridClient.SendEmailAsync(sgm);
-                }
-
                 if (dto.NotificationTypes.Contains(NotificationType.InApp))
                 {
                     var notificationEntity = new NotificationEntity
@@ -152,25 +144,36 @@ namespace MarsOffice.Qeeps.Notifications
                         ReadDate = null,
                         Severity = dto.Severity
                     };
-
-                    await notificationsOut.AddAsync(notificationEntity);
+                    var uri = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
+                    var insertReply = await notificationsClient.CreateDocumentAsync(uri, notificationEntity, new RequestOptions
+                    {
+                        PartitionKey = new PartitionKey(userDto.Id)
+                    });
+                    notificationEntity.Id = insertReply.Resource.Id;
 
                     // TODO SIGNALR
 
                     // PUSH
-                    var col = UriFactory.CreateDocumentCollectionUri("notifications", "PushSubscriptions");
-                    var pushSubscriptionsQuery = pushSubscriptionsClient.CreateDocumentQuery<PushSubscriptionEntity>(col, new FeedOptions
-                    {
-                        PartitionKey = new PartitionKey(userDto.Id)
-                    }).OrderByDescending(x => x.CreatedDate).Take(10)
-                    .AsDocumentQuery();
-
                     var pushSubs = new List<PushSubscriptionEntity>();
-                    while (pushSubscriptionsQuery.HasMoreResults)
+                    try
                     {
-                        pushSubs.AddRange(
-                            (await pushSubscriptionsQuery.ExecuteNextAsync<PushSubscriptionEntity>()).ToList()
-                        );
+                        var col = UriFactory.CreateDocumentCollectionUri("notifications", "PushSubscriptions");
+                        var pushSubscriptionsQuery = pushSubscriptionsClient.CreateDocumentQuery<PushSubscriptionEntity>(col, new FeedOptions
+                        {
+                            PartitionKey = new PartitionKey(userDto.Id)
+                        }).OrderByDescending(x => x.CreatedDate).Take(10)
+                        .AsDocumentQuery();
+
+                        while (pushSubscriptionsQuery.HasMoreResults)
+                        {
+                            pushSubs.AddRange(
+                                (await pushSubscriptionsQuery.ExecuteNextAsync<PushSubscriptionEntity>()).ToList()
+                            );
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
                     }
 
                     if (pushSubs.Any())
@@ -229,9 +232,24 @@ namespace MarsOffice.Qeeps.Notifications
                         }
                     }
                 }
+
+                if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(userDto.Email))
+                {
+                    try
+                    {
+                        var sgm = new SendGridMessage();
+                        sgm.SetSubject(foundTemplate.Title);
+                        sgm.SetFrom(_config["FromEmail"], _config["FromName"]);
+                        sgm.AddTo(userDto.Email);
+                        sgm.AddContent(MimeType.Html, foundTemplate.Message);
+                        await _sendGridClient.SendEmailAsync(sgm);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError(e, "Email sending failed: " + userDto.Email);
+                    }
+                }
             }
-            
-            await notificationsOut.FlushAsync();
         }
     }
 }
