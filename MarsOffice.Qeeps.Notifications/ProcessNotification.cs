@@ -189,7 +189,7 @@ namespace MarsOffice.Qeeps.Notifications
                                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                                 Data = new WebPushData
                                 {
-                                    Id = notificationEntity.Id, // TODO
+                                    Id = notificationEntity.Id,
                                     AbsoluteRouteUrl = dto.AbsoluteRouteUrl,
                                     Severity = dto.Severity,
                                     CreatedDate = DateTimeOffset.UtcNow,
@@ -230,6 +230,8 @@ namespace MarsOffice.Qeeps.Notifications
                     }
                 }
             }
+            
+            await notificationsOut.FlushAsync();
         }
     }
 }
