@@ -24,6 +24,7 @@ namespace MarsOffice.Qeeps.Notifications
             var config = builder.GetContext().Configuration;
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
             builder.Services.AddMicroserviceClients(new [] {"access"}, config);
+            builder.Services.AddHttpClient();
         }
     }
 }
