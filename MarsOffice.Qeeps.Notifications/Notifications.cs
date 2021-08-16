@@ -54,7 +54,7 @@ namespace MarsOffice.Qeeps.Notifications
             })
             .Where(x => x.UserId == uid)
             .CountAsync();
-            
+
             var unread = await client.CreateDocumentQuery<NotificationEntity>(col, new FeedOptions
             {
                 PartitionKey = new PartitionKey(uid)
@@ -74,12 +74,14 @@ namespace MarsOffice.Qeeps.Notifications
 
             var results = new List<NotificationEntity>();
 
-            while (resultsQuery.HasMoreResults) {
+            while (resultsQuery.HasMoreResults)
+            {
                 var entities = (await resultsQuery.ExecuteNextAsync<NotificationEntity>()).ToList();
                 results.AddRange(entities);
             }
 
-            var reply = new NotificationsDto {
+            var reply = new NotificationsDto
+            {
                 Total = total,
                 Unread = unread,
                 Notifications = _mapper.Map<IEnumerable<NotificationDto>>(results)
@@ -89,6 +91,82 @@ namespace MarsOffice.Qeeps.Notifications
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
+        }
+
+        [FunctionName("MarkAsRead")]
+        public async Task<IActionResult> MarkAsRead(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/notifications/{id}/markAsRead")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "notifications",
+                collectionName: "Notifications",
+                #if DEBUG
+                CreateIfNotExists = true,
+                PartitionKey = "UserId",
+                #endif
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
+        {
+            var principal = QeepsPrincipal.Parse(req);
+            var uid = principal.FindFirstValue("id");
+            var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
+            var notificationId = req.RouteValues["id"].ToString();
+            var updateData = new
+            {
+                Id = notificationId,
+                IsRead = true,
+                ReadDate = System.DateTimeOffset.UtcNow
+            };
+            await client.UpsertDocumentAsync(col, updateData, new RequestOptions
+            {
+                PartitionKey = new PartitionKey(uid)
+            }, true);
+            return new OkResult();
+        }
+
+        [FunctionName("MarkAllAsRead")]
+        public async Task<IActionResult> MarkAllAsRead(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/notifications/markAllAsRead")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "notifications",
+                collectionName: "Notifications",
+                #if DEBUG
+                CreateIfNotExists = true,
+                PartitionKey = "UserId",
+                #endif
+                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
+        {
+            var principal = QeepsPrincipal.Parse(req);
+            var uid = principal.FindFirstValue("id");
+            var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
+
+            var allUnreadNotificationsQuery = client.CreateDocumentQuery<NotificationEntity>(col, new FeedOptions
+            {
+                PartitionKey = new PartitionKey(uid)
+            })
+            .Where(x => x.IsRead == false && x.UserId == uid)
+            .AsDocumentQuery();
+
+            var tasks = new List<Task<ResourceResponse<Document>>>();
+            while (allUnreadNotificationsQuery.HasMoreResults)
+            {
+                var reply = await allUnreadNotificationsQuery.ExecuteNextAsync<NotificationEntity>();
+                foreach (var ne in reply)
+                {
+                    var updateData = new
+                    {
+                        ne.Id,
+                        IsRead = true,
+                        ReadDate = System.DateTimeOffset.UtcNow
+                    };
+                    tasks.Add(client.UpsertDocumentAsync(col, updateData, new RequestOptions
+                    {
+                        PartitionKey = new PartitionKey(uid)
+                    }, true));
+                }
+            }
+            
+            await Task.WhenAll(tasks);
+
+            return new OkResult();
         }
     }
 }
