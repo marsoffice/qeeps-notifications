@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Threading.Tasks;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
@@ -11,10 +12,14 @@ namespace MarsOffice.Qeeps.Notifications
     public class ProcessNotification
     {
         private readonly IConfiguration _config;
+        private readonly HttpClient _accessClient;
+        private readonly HttpClient _client;
 
-        public ProcessNotification(IConfiguration config)
+        public ProcessNotification(IConfiguration config, IHttpClientFactory httpClientFactory)
         {
             _config = config;
+            _accessClient = httpClientFactory.CreateClient("access");
+            _client = httpClientFactory.CreateClient();
         }
 
         [FunctionName("ProcessNotification")]
@@ -38,7 +43,7 @@ namespace MarsOffice.Qeeps.Notifications
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient pushSubscriptionsClient
             )
         {
-
+            
             await Task.CompletedTask;
         }
     }
