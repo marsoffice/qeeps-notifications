@@ -2,12 +2,12 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
-    <RootNamespace>MarsOffice.Qeeps.TemplateFunction</RootNamespace>
+    <RootNamespace>MarsOffice.Qeeps.Notifications</RootNamespace>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../MarsOffice.Qeeps.TemplateFunction.Abstractions/MarsOffice.Qeeps.TemplateFunction.Abstractions.csproj" />
+    <ProjectReference Include="../MarsOffice.Qeeps.Notifications.Abstractions/MarsOffice.Qeeps.Notifications.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.1.2-dev.4" />

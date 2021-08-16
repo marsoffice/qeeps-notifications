@@ -4,8 +4,8 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.TemplateFunction.Startup))]
-namespace MarsOffice.Qeeps.TemplateFunction
+[assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Notifications.Startup))]
+namespace MarsOffice.Qeeps.Notifications
 {
     public class Startup : FunctionsStartup
     {
@@ -21,7 +21,9 @@ namespace MarsOffice.Qeeps.TemplateFunction
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            var config = builder.GetContext().Configuration;
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
+            builder.Services.AddMicroserviceClients(new [] {"access"}, config);
         }
     }
 }

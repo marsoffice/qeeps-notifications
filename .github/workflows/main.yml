@@ -1,4 +1,4 @@
-name: qeeps-templatefunction
+name: qeeps-notifications
 on:
   push:
     branches: [ develop, master ]
@@ -51,12 +51,12 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: dotnet build
-        run: dotnet build -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} MarsOffice.Qeeps.TemplateFunction.sln
+        run: dotnet build -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} MarsOffice.Qeeps.Notifications.sln
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: dotnet pack
-        run: dotnet pack -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} -o ./dist --no-build MarsOffice.Qeeps.TemplateFunction.sln
+        run: dotnet pack -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} -o ./dist --no-build MarsOffice.Qeeps.Notifications.sln
 
       - name: upload artifact
         uses: actions/upload-artifact@v2.2.4
@@ -120,7 +120,7 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.TemplateFunction
+        run: dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 

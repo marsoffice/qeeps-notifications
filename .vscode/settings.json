@@ -1,5 +1,5 @@
 {
-    "azureFunctions.deploySubpath": "MarsOffice.Qeeps.TemplateFunction/bin/Release/netcoreapp3.1/publish",
+    "azureFunctions.deploySubpath": "MarsOffice.Qeeps.Notifications/bin/Release/netcoreapp3.1/publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~3",
     "debug.internalConsoleOptions": "neverOpen",
