@@ -10,6 +10,7 @@ namespace MarsOffice.Qeeps.Notifications.Abstractions
         public string TemplateName { get; set; }
         public string AbsoluteRouteUrl { get; set; }
         public Dictionary<string, string> PlaceholderData { get; set; }
+        public Dictionary<string, string> AdditionalData {get;set;}
         public IEnumerable<NotificationType> NotificationTypes { get; set; }
         public Severity Severity { get; set; }
     }
