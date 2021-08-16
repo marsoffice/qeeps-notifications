@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SendGrid.Extensions.DependencyInjection;
 
 [assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Notifications.Startup))]
 namespace MarsOffice.Qeeps.Notifications
@@ -23,8 +24,13 @@ namespace MarsOffice.Qeeps.Notifications
         {
             var config = builder.GetContext().Configuration;
             builder.Services.AddAutoMapper(typeof(Startup).Assembly);
-            builder.Services.AddMicroserviceClients(new [] {"access"}, config);
+            builder.Services.AddMicroserviceClients(new[] { "access" }, config);
             builder.Services.AddHttpClient();
+            builder.Services.AddSendGrid(options =>
+            {
+                options.ApiKey = config["sendgridapikey"];
+                options.HttpErrorAsException = true;
+            });
         }
     }
 }
