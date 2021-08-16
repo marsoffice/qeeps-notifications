@@ -25,7 +25,6 @@ namespace MarsOffice.Qeeps.Notifications
     {
         private readonly IConfiguration _config;
         private readonly HttpClient _accessClient;
-        private readonly HttpClient _client;
         private readonly ISendGridClient _sendGridClient;
         private readonly WebPushClient _webPushClient;
         private readonly IValidator<RequestNotificationDto> _validator;
@@ -37,7 +36,6 @@ namespace MarsOffice.Qeeps.Notifications
         {
             _config = config;
             _accessClient = httpClientFactory.CreateClient("access");
-            _client = httpClientFactory.CreateClient();
             _sendGridClient = sendGridClient;
             _webPushClient = new WebPushClient();
             _validator = validator;
