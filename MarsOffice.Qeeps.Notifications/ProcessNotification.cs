@@ -46,7 +46,13 @@ namespace MarsOffice.Qeeps.Notifications
 
         [FunctionName("ProcessNotification")]
         public async Task Run(
-            [ServiceBusTrigger("notifications", Connection = "sbconnectionstring")] RequestNotificationDto dto,
+            [ServiceBusTrigger(
+                #if DEBUG
+                "notifications-dev",
+                #else
+                "notifications",
+                #endif
+                Connection = "sbconnectionstring")] RequestNotificationDto dto,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
