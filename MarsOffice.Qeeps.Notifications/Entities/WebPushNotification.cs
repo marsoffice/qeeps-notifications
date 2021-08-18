@@ -31,5 +31,15 @@ public class WebPushNotification
         public Severity Severity { get; set; }
         public Dictionary<string, string> AdditionalData { get; set; }
         public DateTimeOffset CreatedDate { get; set; }
+        public WebPushDataOnActionClick OnActionClick {get;set;}
+    }
+
+    public class WebPushDataOnActionClick {
+        public WebPushDataOnActionClickItem Default {get;set;}
+    }
+
+    public class WebPushDataOnActionClickItem {
+        public string Operation {get;set;}
+        public string Url {get;set;}
     }
 }

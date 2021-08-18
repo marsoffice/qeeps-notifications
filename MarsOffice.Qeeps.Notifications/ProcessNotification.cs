@@ -235,7 +235,13 @@ namespace MarsOffice.Qeeps.Notifications
                                     AbsoluteRouteUrl = dto.AbsoluteRouteUrl,
                                     Severity = dto.Severity,
                                     CreatedDate = DateTime.UtcNow,
-                                    AdditionalData = dto.AdditionalData
+                                    AdditionalData = dto.AdditionalData,
+                                    OnActionClick = new WebPushDataOnActionClick {
+                                        Default = new WebPushDataOnActionClickItem {
+                                            Operation = "navigateLastFocusedOrOpen",
+                                            Url = dto.AbsoluteRouteUrl
+                                        }
+                                    }
                                 }
                             }
                         }, new JsonSerializerSettings
@@ -260,8 +266,9 @@ namespace MarsOffice.Qeeps.Notifications
                                     json, _vapidDetails);
                                 });
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                logger.LogError(e, $"Push notification failed to be sent.");
                                 var docUri = UriFactory.CreateDocumentUri("notifications", "PushSubscriptions", pushSub.Id);
                                 await pushSubscriptionsClient.DeleteDocumentAsync(docUri, new RequestOptions
                                 {
