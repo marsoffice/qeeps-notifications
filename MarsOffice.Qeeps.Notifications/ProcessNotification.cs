@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Polly;
 using SendGrid;
+using SendGrid.Helpers.Mail;
 using WebPush;
 
 namespace MarsOffice.Qeeps.Notifications
