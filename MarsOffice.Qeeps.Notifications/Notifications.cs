@@ -107,18 +107,20 @@ namespace MarsOffice.Qeeps.Notifications
         {
             var principal = QeepsPrincipal.Parse(req);
             var uid = principal.FindFirstValue("id");
-            var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
             var notificationId = req.RouteValues["id"].ToString();
-            var updateData = new
-            {
-                Id = notificationId,
-                IsRead = true,
-                ReadDate = System.DateTimeOffset.UtcNow
-            };
-            await client.UpsertDocumentAsync(col, updateData, new RequestOptions
+            var docUri = UriFactory.CreateDocumentUri("notifications", "Notifications", notificationId);
+            
+            var foundNotificationResponse = await client.ReadDocumentAsync<NotificationEntity>(docUri, new RequestOptions{
+                PartitionKey = new PartitionKey(uid)
+            });
+            
+            foundNotificationResponse.Document.IsRead = true;
+            foundNotificationResponse.Document.ReadDate = System.DateTimeOffset.UtcNow;
+
+            await client.ReplaceDocumentAsync(docUri, foundNotificationResponse.Document, new RequestOptions
             {
                 PartitionKey = new PartitionKey(uid)
-            }, true);
+            });
             return new OkResult();
         }
 
@@ -151,16 +153,14 @@ namespace MarsOffice.Qeeps.Notifications
                 var reply = await allUnreadNotificationsQuery.ExecuteNextAsync<NotificationEntity>();
                 foreach (var ne in reply)
                 {
-                    var updateData = new
-                    {
-                        ne.Id,
-                        IsRead = true,
-                        ReadDate = System.DateTimeOffset.UtcNow
-                    };
-                    tasks.Add(client.UpsertDocumentAsync(col, updateData, new RequestOptions
-                    {
-                        PartitionKey = new PartitionKey(uid)
-                    }, true));
+                    var docUri = UriFactory.CreateDocumentUri("notifications", "Notifications", ne.Id);
+                    ne.IsRead = true;
+                    ne.ReadDate = System.DateTimeOffset.UtcNow;
+                    tasks.Add(
+                        client.ReplaceDocumentAsync(docUri, ne, new RequestOptions {
+                            PartitionKey = new PartitionKey(uid)
+                        })
+                    );
                 }
             }
             
