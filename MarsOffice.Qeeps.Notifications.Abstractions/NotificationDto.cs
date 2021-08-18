@@ -12,7 +12,7 @@ namespace MarsOffice.Qeeps.Notifications.Abstractions
         public string AbsoluteRouteUrl { get; set; }
         public bool IsRead { get; set; }
         public Severity Severity { get; set; }
-        public DateTimeOffset CreatedDate { get; set; }
-        public DateTimeOffset? ReadDate { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime? ReadDate { get; set; }
     }
 }

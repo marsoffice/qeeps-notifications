@@ -19,7 +19,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Polly;
 using SendGrid;
-using SendGrid.Helpers.Mail;
 using WebPush;
 
 namespace MarsOffice.Qeeps.Notifications
@@ -61,22 +60,40 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient notificationsClient,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient pushSubscriptionsClient,
                 ILogger logger
             )
         {
+            #if DEBUG
+            var dbNotif = new Database
+            {
+                Id = "notifications"
+            };
+            await notificationsClient.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+            var colNotif = new DocumentCollection {
+                Id = "Notifications",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await notificationsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
+
+            var colPush = new DocumentCollection {
+                Id = "PushSubscriptions",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await notificationsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
+            #endif
+
             await _validator.ValidateAndThrowAsync(dto);
 
             var foundTemplates = _templates.Where(x => x.Name == dto.TemplateName).ToList();
@@ -150,7 +167,7 @@ namespace MarsOffice.Qeeps.Notifications
                     {
                         UserId = userDto.Id,
                         AbsoluteRouteUrl = dto.AbsoluteRouteUrl,
-                        CreatedDate = DateTimeOffset.UtcNow,
+                        CreatedDate = DateTime.UtcNow,
                         IsRead = false,
                         Message = foundTemplate.Message,
                         Title = foundTemplate.Title,
@@ -217,7 +234,7 @@ namespace MarsOffice.Qeeps.Notifications
                                     Id = notificationEntity.Id,
                                     AbsoluteRouteUrl = dto.AbsoluteRouteUrl,
                                     Severity = dto.Severity,
-                                    CreatedDate = DateTimeOffset.UtcNow,
+                                    CreatedDate = DateTime.UtcNow,
                                     AdditionalData = dto.AdditionalData
                                 }
                             }
@@ -255,6 +272,7 @@ namespace MarsOffice.Qeeps.Notifications
                     }
                 }
 
+                #if !DEBUG
                 if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(userDto.Email))
                 {
                     try
@@ -271,6 +289,7 @@ namespace MarsOffice.Qeeps.Notifications
                         logger.LogError(e, "Email sending failed: " + userDto.Email);
                     }
                 }
+                #endif
             }
 
             if (hasSentSignalr)

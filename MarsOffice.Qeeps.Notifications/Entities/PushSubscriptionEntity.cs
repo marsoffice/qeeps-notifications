@@ -8,7 +8,7 @@ namespace MarsOffice.Qeeps.Notifications.Entities
         [JsonProperty("id")]
         public string Id { get; set; }
         public string UserId { get; set; }
-        public DateTimeOffset CreatedDate {get;set;}
+        public DateTime CreatedDate {get;set;}
         public string SubscriptionJson { get; set; }
     }
 }

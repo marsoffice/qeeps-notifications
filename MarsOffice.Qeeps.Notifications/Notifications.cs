@@ -33,12 +33,25 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
         {
+            #if DEBUG
+            var dbNotif = new Database
+            {
+                Id = "notifications"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+            var colNotif = new DocumentCollection {
+                Id = "Notifications",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
+            #endif
+
             var principal = QeepsPrincipal.Parse(req);
             var uid = principal.FindFirstValue("id");
 
@@ -99,12 +112,24 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
         {
+            #if DEBUG
+            var dbNotif = new Database
+            {
+                Id = "notifications"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+            var colNotif = new DocumentCollection {
+                Id = "Notifications",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
+            #endif
             var principal = QeepsPrincipal.Parse(req);
             var uid = principal.FindFirstValue("id");
             var notificationId = req.RouteValues["id"].ToString();
@@ -115,7 +140,7 @@ namespace MarsOffice.Qeeps.Notifications
             });
             
             foundNotificationResponse.Document.IsRead = true;
-            foundNotificationResponse.Document.ReadDate = System.DateTimeOffset.UtcNow;
+            foundNotificationResponse.Document.ReadDate = System.DateTime.UtcNow;
 
             await client.ReplaceDocumentAsync(docUri, foundNotificationResponse.Document, new RequestOptions
             {
@@ -130,12 +155,24 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
         {
+            #if DEBUG
+            var dbNotif = new Database
+            {
+                Id = "notifications"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+            var colNotif = new DocumentCollection {
+                Id = "Notifications",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
+            #endif
             var principal = QeepsPrincipal.Parse(req);
             var uid = principal.FindFirstValue("id");
             var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
@@ -155,7 +192,7 @@ namespace MarsOffice.Qeeps.Notifications
                 {
                     var docUri = UriFactory.CreateDocumentUri("notifications", "Notifications", ne.Id);
                     ne.IsRead = true;
-                    ne.ReadDate = System.DateTimeOffset.UtcNow;
+                    ne.ReadDate = System.DateTime.UtcNow;
                     tasks.Add(
                         client.ReplaceDocumentAsync(docUri, ne, new RequestOptions {
                             PartitionKey = new PartitionKey(uid)

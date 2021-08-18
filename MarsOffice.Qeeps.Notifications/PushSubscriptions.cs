@@ -61,12 +61,24 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "UserId",
-                #endif
                 ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client)
         {
+            #if DEBUG
+            var dbNotif = new Database
+            {
+                Id = "notifications"
+            };
+            await client.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+            var colPush = new DocumentCollection {
+                Id = "PushSubscriptions",
+                PartitionKey = new PartitionKeyDefinition {
+                    Version = PartitionKeyDefinitionVersion.V1,
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                }
+            };
+            await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
+            #endif
             var principal = QeepsPrincipal.Parse(req);
             using var streamReader = new StreamReader(req.Body);
             var payload = JsonConvert.DeserializeObject<PushSubscriptionDto>(
