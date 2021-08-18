@@ -40,10 +40,10 @@ namespace MarsOffice.Qeeps.Notifications
             _config = config;
             _accessClient = httpClientFactory.CreateClient("access");
             _sendGridClient = sendGridClient;
-            _webPushClient = new WebPushClient();
             _validator = validator;
             _templates = _config.GetSection("Templates").Get<IEnumerable<Template>>();
-            _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["VapidPublicKey"], _config["VapidPrivateKey"]);
+            _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["privatevapidkey"], _config["publicvapidkey"]);
+            _webPushClient = new WebPushClient();
             _mapper = mapper;
         }
 
