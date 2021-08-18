@@ -42,7 +42,7 @@ namespace MarsOffice.Qeeps.Notifications
             _sendGridClient = sendGridClient;
             _validator = validator;
             _templates = _config.GetSection("Templates").Get<IEnumerable<Template>>();
-            _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["privatevapidkey"], _config["publicvapidkey"]);
+            _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["publicvapidkey"], _config["privatevapidkey"]);
             _webPushClient = new WebPushClient();
             _mapper = mapper;
         }
