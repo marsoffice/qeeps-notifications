@@ -46,9 +46,9 @@ jobs:
           cache-name: cache-nuget
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ github.workflow }}-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-${{ github.workflow }}-nuget-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-${{ github.workflow }}-${{ secrets.CACHE_VERSION }}-
+            ${{ runner.os }}-nuget-${{ github.workflow }}-nuget-${{ secrets.CACHE_VERSION }}-
 
       - name: dotnet build
         run: dotnet build -c Release -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} MarsOffice.Qeeps.Notifications.sln
@@ -115,9 +115,9 @@ jobs:
           cache-name: cache-nuget
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ env.cache-name }}
+          key: ${{ runner.os }}-nuget-${{ github.workflow }}-build-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nuget-${{ github.workflow }}-build-${{ secrets.CACHE_VERSION }}-
 
       - name: dotnet publish
         run: dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
