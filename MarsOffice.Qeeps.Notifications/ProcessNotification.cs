@@ -256,7 +256,7 @@ namespace MarsOffice.Qeeps.Notifications
                                 .WaitAndRetryAsync(new[] { TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1500) })
                                 .ExecuteAsync(async () =>
                                 {
-                                    await _webPushClient.SendNotificationAsync(new WebPush.PushSubscription(ps.Endpoint, ps.P256Dh, ps.Auth),
+                                    await _webPushClient.SendNotificationAsync(new WebPush.PushSubscription(ps.Endpoint, ps.Keys.P256Dh, ps.Keys.Auth),
                                     json, _vapidDetails);
                                 });
                             }
