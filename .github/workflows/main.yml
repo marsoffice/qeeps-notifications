@@ -46,7 +46,7 @@ jobs:
           cache-name: cache-nuget
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ env.cache-name }}-${{ hashFiles('**/*.csproj')
+          key: ${{ runner.os }}-nuget-${{ env.cache-name }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
