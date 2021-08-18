@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AutoMapper;
 using FluentValidation;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Notifications.Abstractions;
@@ -11,6 +12,7 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -31,9 +33,10 @@ namespace MarsOffice.Qeeps.Notifications
         private readonly IValidator<RequestNotificationDto> _validator;
         private readonly IEnumerable<Template> _templates;
         private readonly VapidDetails _vapidDetails;
+        private readonly IMapper _mapper;
 
         public ProcessNotification(IConfiguration config, IHttpClientFactory httpClientFactory,
-            ISendGridClient sendGridClient, IValidator<RequestNotificationDto> validator)
+            ISendGridClient sendGridClient, IValidator<RequestNotificationDto> validator, IMapper mapper)
         {
             _config = config;
             _accessClient = httpClientFactory.CreateClient("access");
@@ -42,6 +45,7 @@ namespace MarsOffice.Qeeps.Notifications
             _validator = validator;
             _templates = _config.GetSection("Templates").Get<IEnumerable<Template>>();
             _vapidDetails = new VapidDetails(_config["VapidSubject"], _config["VapidPublicKey"], _config["VapidPrivateKey"]);
+            _mapper = mapper;
         }
 
         [FunctionName("ProcessNotification")]
@@ -53,6 +57,7 @@ namespace MarsOffice.Qeeps.Notifications
                 "notifications",
                 #endif
                 Connection = "sbconnectionstring")] RequestNotificationDto dto,
+            [SignalR(HubName = "main", ConnectionStringSetting = "signalrconnectionstring")] IAsyncCollector<SignalRMessage> signalRMessages,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
@@ -119,6 +124,8 @@ namespace MarsOffice.Qeeps.Notifications
                 });
             }
 
+            var hasSentSignalr = false;
+
             foreach (var userDto in userDtos)
             {
                 var lang = "ro";
@@ -157,7 +164,16 @@ namespace MarsOffice.Qeeps.Notifications
                     });
                     notificationEntity.Id = insertReply.Resource.Id;
 
-                    // TODO SIGNALR
+                    var notificationDto = _mapper.Map<NotificationDto>(notificationEntity);
+
+                    // SIGNALR
+                    await signalRMessages.AddAsync(new SignalRMessage
+                    {
+                        UserId = userDto.Id,
+                        Arguments = new object[] { notificationDto },
+                        Target = "notificationReceived"
+                    });
+                    hasSentSignalr = true;
 
                     // PUSH
                     var pushSubs = new List<PushSubscriptionEntity>();
@@ -255,6 +271,11 @@ namespace MarsOffice.Qeeps.Notifications
                         logger.LogError(e, "Email sending failed: " + userDto.Email);
                     }
                 }
+            }
+
+            if (hasSentSignalr)
+            {
+                await signalRMessages.FlushAsync();
             }
         }
     }
