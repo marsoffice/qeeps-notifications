@@ -58,6 +58,10 @@ namespace MarsOffice.Qeeps.Notifications
             int page = req.Query.ContainsKey("page") ? int.Parse(req.Query["page"].ToString()) : 1;
             int elementsPerPage = req.Query.ContainsKey("elementsPerPage") ? int.Parse(req.Query["elementsPerPage"].ToString()) : 50;
 
+            if (elementsPerPage > 50) {
+                elementsPerPage = 50;
+            }
+
             var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
 
 
