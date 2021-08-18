@@ -74,7 +74,7 @@ namespace MarsOffice.Qeeps.Notifications
                 Id = "PushSubscriptions",
                 PartitionKey = new PartitionKeyDefinition {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);

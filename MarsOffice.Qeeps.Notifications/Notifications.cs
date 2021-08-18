@@ -46,7 +46,7 @@ namespace MarsOffice.Qeeps.Notifications
                 Id = "Notifications",
                 PartitionKey = new PartitionKeyDefinition {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
@@ -125,7 +125,7 @@ namespace MarsOffice.Qeeps.Notifications
                 Id = "Notifications",
                 PartitionKey = new PartitionKeyDefinition {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
@@ -168,7 +168,7 @@ namespace MarsOffice.Qeeps.Notifications
                 Id = "Notifications",
                 PartitionKey = new PartitionKeyDefinition {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
                 }
             };
             await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
