@@ -31,7 +31,6 @@ namespace MarsOffice.Qeeps.Notifications
             builder.Services.AddSendGrid(options =>
             {
                 options.ApiKey = config["sendgridapikey"];
-                options.HttpErrorAsException = true;
             });
         }
     }

@@ -279,7 +279,7 @@ namespace MarsOffice.Qeeps.Notifications
                     }
                 }
 
-                #if !DEBUG
+
                 if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(userDto.Email))
                 {
                     try
@@ -296,7 +296,6 @@ namespace MarsOffice.Qeeps.Notifications
                         logger.LogError(e, "Email sending failed: " + userDto.Email);
                     }
                 }
-                #endif
             }
 
             if (hasSentSignalr)
