@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -240,7 +241,7 @@ namespace MarsOffice.Qeeps.Notifications
                                     OnActionClick = new WebPushDataOnActionClick {
                                         Default = new WebPushDataOnActionClickItem {
                                             Operation = "navigateLastFocusedOrOpen",
-                                            Url = dto.AbsoluteRouteUrl
+                                            Url = $"/from-notification?nid={notificationEntity.Id}&returnTo={WebUtility.UrlEncode(dto.AbsoluteRouteUrl ?? "/")}"
                                         }
                                     }
                                 }
