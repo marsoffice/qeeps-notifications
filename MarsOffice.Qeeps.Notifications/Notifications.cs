@@ -29,7 +29,7 @@ namespace MarsOffice.Qeeps.Notifications
 
         [FunctionName("GetAllNotifications")]
         public async Task<IActionResult> GetAllNotifications(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/notifications")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/notifications/all")] HttpRequest req,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
