@@ -129,26 +129,13 @@ namespace MarsOffice.Qeeps.Notifications
                 return;
             }
 
-            var validUserIds = userDtos.Select(x => x.Id).Distinct().ToList();
-
-            IEnumerable<UserPreferencesDto> preferences = new List<UserPreferencesDto>();
-
-            var userPreferencesResponse = await _accessClient.PostAsJsonAsync("/api/access/preferences", validUserIds);
-            if (userPreferencesResponse.IsSuccessStatusCode)
-            {
-                var userPreferencesJson = await userPreferencesResponse.Content.ReadAsStringAsync();
-                preferences = JsonConvert.DeserializeObject<IEnumerable<UserPreferencesDto>>(userPreferencesJson, new JsonSerializerSettings
-                {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                });
-            }
-
             var hasSentSignalr = false;
 
             foreach (var userDto in userDtos)
             {
                 var lang = "ro";
-                var foundPref = preferences.FirstOrDefault(x => x.UserId == userDto.Id);
+                var foundUser = userDtos.FirstOrDefault(x => x.Id == userDto.Id);
+                var foundPref = foundUser?.UserPreferences;
                 if (foundPref != null && !string.IsNullOrEmpty(foundPref.PreferredLanguage))
                 {
                     lang = foundPref.PreferredLanguage;
