@@ -95,6 +95,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: set up jdk 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+
       - name: checkout repo
         uses: actions/checkout@v2
         with:
@@ -119,10 +124,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-${{ github.workflow }}-build-${{ secrets.CACHE_VERSION }}-
 
+      - name: cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+          
+      - name: cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v1
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+          
+      - name: install SonarCloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ./sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner --ignore-failed-sources --add-source https://api.nuget.org/v3/index.json
+
       - name: dotnet publish
-        run: dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
+        run: |
+            ./.sonar/scanner/dotnet-sonarscanner begin /k:"marsoffice_qeeps-notifications" /o:"marsoffice" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+            dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
+            ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: upload artifact
         uses: actions/upload-artifact@v2.2.4
@@ -130,6 +161,7 @@ jobs:
         with:
           name: dist
           path: ./dist
+          
 
   deploy_stg:
     if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/develop' }}
