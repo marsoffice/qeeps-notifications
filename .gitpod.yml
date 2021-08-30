@@ -1,0 +1,19 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: dotnet restore
+    command: dotnet build
+    env:
+      AZURE_FUNCTIONS_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Development
+
+ports:
+  - port: 7000
+    onOpen: ignore
+
+vscode:
+  extensions:
+    - muhammad-sammy.csharp
+    - vscode-icons-team.vscode-icons
+    - esbenp.prettier-vscode
