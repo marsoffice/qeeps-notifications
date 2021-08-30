@@ -10,7 +10,7 @@ local.settings.json
 *.userosscache
 *.sln.docstates
 
-NuGet.config
+# NuGet.config
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
