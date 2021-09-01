@@ -13,7 +13,7 @@
     <PackageReference Include="FluentValidation" Version="10.3.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="10.3.0" />
     <PackageReference Include="MarsOffice.Qeeps.Access.Abstractions" Version="1.0.0-dev.84" />
-    <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.1.2-dev.4" />
+    <PackageReference Include="MarsOffice.Qeeps.Microfunction" Version="1.2.0-dev.13" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.ServiceBus" Version="4.3.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SignalRService" Version="1.5.0" />

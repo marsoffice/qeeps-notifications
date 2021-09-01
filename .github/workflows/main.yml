@@ -19,10 +19,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - run: mv NuGet.config NuGet.config.disabled
+
       - name: install gv
         uses: gittools/actions/gitversion/setup@v0.9.7
         with:
           versionSpec: "5.5.0"
+
+      - run: mv NuGet.config.disabled NuGet.config
 
       - name: execute gv
         id: gitversion
