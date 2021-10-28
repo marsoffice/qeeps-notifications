@@ -92,6 +92,7 @@ jobs:
 
       - name: dotnet nuget push
         run: dotnet nuget push *.nupkg --no-symbols --skip-duplicate
+        continue-on-error: true
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
