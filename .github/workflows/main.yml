@@ -1,9 +1,9 @@
 name: qeeps-notifications
 on:
   push:
-    branches: [ develop, master ]
+    branches: [develop, master]
   pull_request:
-    branches: [ develop ]
+    branches: [develop]
   workflow_dispatch:
 
 defaults:
@@ -35,13 +35,13 @@ jobs:
           useConfigFile: true
           configFilePath: "GitVersion.yml"
 
-      - name: setup net core 3.1
-        uses: actions/setup-dotnet@v1.8.1
+      - name: setup net 6
+        uses: actions/setup-dotnet@v1.8.2
         with:
-          dotnet-version: '3.1.x'
+          dotnet-version: "6.0.x"
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
         env:
-          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+          NUGET_AUTH_TOKEN: "%NUGET_AUTH_TOKEN%"
 
       - name: cache nuget
         uses: actions/cache@v2
@@ -69,8 +69,6 @@ jobs:
           name: dist_nuget
           path: ./dist
 
-
-
   nuget_push:
     runs-on: ubuntu-latest
     if: ${{ success() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') }}
@@ -79,16 +77,16 @@ jobs:
       - name: download artifact
         uses: actions/download-artifact@v2.0.10
         with:
-          name: 'dist_nuget'
+          name: "dist_nuget"
           path: .
 
-      - name: setup net core 3.1
-        uses: actions/setup-dotnet@v1.8.1
+      - name: setup net 6
+        uses: actions/setup-dotnet@v1.8.2
         with:
-          dotnet-version: '3.1.x'
+          dotnet-version: "6.0.x"
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
         env:
-          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+          NUGET_AUTH_TOKEN: "%NUGET_AUTH_TOKEN%"
 
       - name: dotnet nuget push
         run: dotnet nuget push *.nupkg --no-symbols --skip-duplicate
@@ -96,27 +94,21 @@ jobs:
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: set up jdk 11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-
       - name: checkout repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: setup net core 3.1
-        uses: actions/setup-dotnet@v1.8.1
+      - name: setup net 6
+        uses: actions/setup-dotnet@v1.8.2
         with:
-          dotnet-version: '3.1.x'
+          dotnet-version: "6.0.x"
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
         env:
-          NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+          NUGET_AUTH_TOKEN: "%NUGET_AUTH_TOKEN%"
 
       - name: cache nuget
         uses: actions/cache@v2
@@ -129,36 +121,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-${{ github.workflow }}-build-${{ secrets.CACHE_VERSION }}-
 
-      - name: cache SonarCloud packages
-        uses: actions/cache@v1
-        with:
-          path: ~/sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-          
-      - name: cache SonarCloud scanner
-        id: cache-sonar-scanner
-        uses: actions/cache@v1
-        with:
-          path: ./.sonar/scanner
-          key: ${{ runner.os }}-sonar-scanner
-          restore-keys: ${{ runner.os }}-sonar-scanner
-          
-      - name: install SonarCloud scanner
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ./sonar/scanner
-          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner --ignore-failed-sources --add-source https://api.nuget.org/v3/index.json
-
       - name: dotnet publish
         run: |
-            ./.sonar/scanner/dotnet-sonarscanner begin /k:"marsoffice_qeeps-notifications" /o:"marsoffice" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-            dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
-            ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          dotnet publish -c Release -o ./dist ./MarsOffice.Qeeps.Notifications
+
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: upload artifact
         uses: actions/upload-artifact@v2.2.4
@@ -166,7 +135,6 @@ jobs:
         with:
           name: dist
           path: ./dist
-          
 
   deploy_stg:
     if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/develop' }}
@@ -178,27 +146,26 @@ jobs:
       - name: download artifact
         uses: actions/download-artifact@v2.0.10
         with:
-          name: 'dist'
+          name: "dist"
           path: ./dist
 
-          
       - name: az login
         uses: Azure/login@v1
         with:
           creds: |
-              {
-                "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-                "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-                "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-                "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-              }
-            
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
       - name: deploy westeurope
         uses: Azure/functions-action@v1.3.2
         with:
           package: ./dist
           app-name: func-${{ github.workflow }}-westeurope-stg
-          
+
   deploy_prod:
     if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
@@ -209,19 +176,19 @@ jobs:
       - name: Download a Build Artifact
         uses: actions/download-artifact@v2.0.10
         with:
-          name: 'dist'
+          name: "dist"
           path: ./dist
-          
+
       - name: az login
         uses: Azure/login@v1
         with:
           creds: |
-              {
-                "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-                "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-                "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-                "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-              }
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
 
       - name: deploy westeurope
         uses: Azure/functions-action@v1.3.2
