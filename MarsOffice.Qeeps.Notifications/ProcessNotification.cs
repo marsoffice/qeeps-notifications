@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
+using Microsoft.Azure.SignalR.Management;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -58,7 +60,6 @@ namespace MarsOffice.Qeeps.Notifications
                 "notifications",
                 #endif
                 Connection = "sbconnectionstring")] RequestNotificationDto dto,
-            [SignalR(HubName = "main", ConnectionStringSetting = "signalrconnectionstring")] IAsyncCollector<SignalRMessage> signalRMessages,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
@@ -70,31 +71,35 @@ namespace MarsOffice.Qeeps.Notifications
                 ILogger logger
             )
         {
-            #if DEBUG
+#if DEBUG
             var dbNotif = new Database
             {
                 Id = "notifications"
             };
             await notificationsClient.CreateDatabaseIfNotExistsAsync(dbNotif);
 
-            var colNotif = new DocumentCollection {
+            var colNotif = new DocumentCollection
+            {
                 Id = "Notifications",
-                PartitionKey = new PartitionKeyDefinition {
+                PartitionKey = new PartitionKeyDefinition
+                {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
                 }
             };
             await notificationsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
 
-            var colPush = new DocumentCollection {
+            var colPush = new DocumentCollection
+            {
                 Id = "PushSubscriptions",
-                PartitionKey = new PartitionKeyDefinition {
+                PartitionKey = new PartitionKeyDefinition
+                {
                     Version = PartitionKeyDefinitionVersion.V1,
-                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() {"/UserId"})
+                    Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
                 }
             };
             await notificationsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
-            #endif
+#endif
 
             await _validator.ValidateAndThrowAsync(dto);
 
@@ -128,8 +133,6 @@ namespace MarsOffice.Qeeps.Notifications
             {
                 return;
             }
-
-            var hasSentSignalr = false;
 
             foreach (var userDto in userDtos)
             {
@@ -173,13 +176,7 @@ namespace MarsOffice.Qeeps.Notifications
                     var notificationDto = _mapper.Map<NotificationDto>(notificationEntity);
 
                     // SIGNALR
-                    await signalRMessages.AddAsync(new SignalRMessage
-                    {
-                        UserId = userDto.Id,
-                        Arguments = new object[] { notificationDto },
-                        Target = "notificationReceived"
-                    });
-                    hasSentSignalr = true;
+                    await SendSignalrNotification(userDto.Id, notificationDto);
 
                     // PUSH
                     var pushSubs = new List<PushSubscriptionEntity>();
@@ -225,8 +222,10 @@ namespace MarsOffice.Qeeps.Notifications
                                     Severity = dto.Severity,
                                     CreatedDate = DateTime.UtcNow,
                                     AdditionalData = dto.AdditionalData,
-                                    OnActionClick = new WebPushDataOnActionClick {
-                                        Default = new WebPushDataOnActionClickItem {
+                                    OnActionClick = new WebPushDataOnActionClick
+                                    {
+                                        Default = new WebPushDataOnActionClickItem
+                                        {
                                             Operation = "navigateLastFocusedOrOpen",
                                             Url = $"/from-notification?nid={notificationEntity.Id}&returnTo={WebUtility.UrlEncode(dto.AbsoluteRouteUrl ?? "/")}"
                                         }
@@ -286,10 +285,29 @@ namespace MarsOffice.Qeeps.Notifications
                     }
                 }
             }
+        }
 
-            if (hasSentSignalr)
+        private async Task SendSignalrNotification(string userId, NotificationDto payload, CancellationToken? ct = null)
+        {
+            var connectionStrings = new List<string> {
+                        _config["signalrconnectionstring"]
+                    };
+            var otherConnectionStrings = _config["othersignalrconnectionstrings"];
+            if (!string.IsNullOrEmpty(otherConnectionStrings))
             {
-                await signalRMessages.FlushAsync();
+                var otherConnectionStringsSplit = otherConnectionStrings.Split(",");
+                connectionStrings.AddRange(otherConnectionStringsSplit);
+            }
+            foreach (var cs in connectionStrings)
+            {
+                using var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(option =>
+                    {
+                        option.ConnectionString = cs;
+                    })
+                    .BuildServiceManager();
+                using var hubContext = await serviceManager.CreateHubContextAsync("main", ct == null ? CancellationToken.None : ct.Value);
+                await hubContext.Clients.User(userId).SendAsync("notificationReceived", payload, ct == null ? CancellationToken.None : ct.Value);
             }
         }
     }

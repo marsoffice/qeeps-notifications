@@ -1,10 +1,10 @@
 using System;
 using System.IO;
+using FluentValidation;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SendGrid.Extensions.DependencyInjection;
-using FluentValidation;
 
 [assembly: FunctionsStartup(typeof(MarsOffice.Qeeps.Notifications.Startup))]
 namespace MarsOffice.Qeeps.Notifications
