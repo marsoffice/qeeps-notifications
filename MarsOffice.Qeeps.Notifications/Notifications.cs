@@ -14,6 +14,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -24,9 +25,12 @@ namespace MarsOffice.Qeeps.Notifications
     public class Notifications
     {
         private readonly IMapper _mapper;
-        public Notifications(IMapper mapper)
+        private readonly IConfiguration _config;
+
+        public Notifications(IMapper mapper, IConfiguration config)
         {
             _mapper = mapper;
+            _config = config;
         }
 
         [FunctionName("GetAllNotifications")]
@@ -35,11 +39,12 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
                 ILogger log)
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var dbNotif = new Database
                 {
@@ -130,11 +135,12 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
                 ILogger log)
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var dbNotif = new Database
                 {
@@ -185,11 +191,12 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log)
         {
             try
             {
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 #if DEBUG
                 var dbNotif = new Database
                 {

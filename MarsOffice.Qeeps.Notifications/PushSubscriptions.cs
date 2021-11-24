@@ -15,6 +15,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -24,10 +25,12 @@ namespace MarsOffice.Qeeps.Notifications
     public class PushSubscriptions
     {
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
 
-        public PushSubscriptions(IMapper mapper)
+        public PushSubscriptions(IMapper mapper, IConfiguration config)
         {
             _mapper = mapper;
+            _config = config;
         }
 
         [FunctionName("AddPushSubscription")]
@@ -36,15 +39,31 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
-                #if DEBUG
-                CreateIfNotExists = true,
-                PartitionKey = "/UserId",
-                #endif
-                ConnectionStringSetting = "cdbconnectionstring")] IAsyncCollector<PushSubscriptionEntity> pushSubscriptionsOut,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient pushSubscriptionsClient,
             ILogger log)
         {
             try
             {
+#if DEBUG
+                var dbNotif = new Database
+                {
+                    Id = "notifications"
+                };
+                await pushSubscriptionsClient.CreateDatabaseIfNotExistsAsync(dbNotif);
+
+                var colPush = new DocumentCollection
+                {
+                    Id = "PushSubscriptions",
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Version = PartitionKeyDefinitionVersion.V1,
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
+                    }
+                };
+                await pushSubscriptionsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
+#endif
+
+                pushSubscriptionsClient.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
                 var principal = QeepsPrincipal.Parse(req);
                 using var streamReader = new StreamReader(req.Body);
                 var payload = JsonConvert.DeserializeObject<PushSubscriptionDto>(
@@ -56,7 +75,11 @@ namespace MarsOffice.Qeeps.Notifications
                 );
                 var entity = _mapper.Map<PushSubscriptionEntity>(payload);
                 entity.UserId = principal.FindFirstValue("id");
-                await pushSubscriptionsOut.AddAsync(entity);
+                var col = UriFactory.CreateDocumentCollectionUri("notifications", "PushSubscriptions");
+                await pushSubscriptionsClient.UpsertDocumentAsync(col, entity, new RequestOptions
+                {
+                    PartitionKey = new PartitionKey(entity.UserId)
+                });
                 return new OkResult();
             }
             catch (Exception e)
@@ -72,7 +95,7 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient client,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient client,
             ILogger log)
         {
             try
@@ -95,6 +118,9 @@ namespace MarsOffice.Qeeps.Notifications
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
 #endif
+
+                client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
+
                 var principal = QeepsPrincipal.Parse(req);
                 using var streamReader = new StreamReader(req.Body);
                 var payload = JsonConvert.DeserializeObject<PushSubscriptionDto>(

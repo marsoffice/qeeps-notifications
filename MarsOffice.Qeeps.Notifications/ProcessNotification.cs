@@ -63,11 +63,11 @@ namespace MarsOffice.Qeeps.Notifications
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "Notifications",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient notificationsClient,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient notificationsClient,
             [CosmosDB(
                 databaseName: "notifications",
                 collectionName: "PushSubscriptions",
-                ConnectionStringSetting = "cdbconnectionstring")] DocumentClient pushSubscriptionsClient,
+                ConnectionStringSetting = "cdbconnectionstring", PreferredLocations = "%location%")] DocumentClient pushSubscriptionsClient,
                 ILogger logger
             )
         {
@@ -100,6 +100,8 @@ namespace MarsOffice.Qeeps.Notifications
             };
             await notificationsClient.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colPush);
 #endif
+            notificationsClient.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
+            pushSubscriptionsClient.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 
             await _validator.ValidateAndThrowAsync(dto);
 
