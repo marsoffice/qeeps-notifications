@@ -166,35 +166,35 @@ jobs:
           package: ./dist
           app-name: func-${{ github.workflow }}-westeurope-stg
 
-  deploy_stg_westus2:
-    if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/develop' }}
-    runs-on: ubuntu-latest
-    needs: [build]
-    environment: stg
-    name: deploy stg westus2
-    steps:
-      - name: download artifact
-        uses: actions/download-artifact@v2.0.10
-        with:
-          name: "dist"
-          path: ./dist
+  # deploy_stg_westus2:
+  #   if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/develop' }}
+  #   runs-on: ubuntu-latest
+  #   needs: [build]
+  #   environment: stg
+  #   name: deploy stg westus2
+  #   steps:
+  #     - name: download artifact
+  #       uses: actions/download-artifact@v2.0.10
+  #       with:
+  #         name: "dist"
+  #         path: ./dist
 
-      - name: az login
-        uses: Azure/login@v1
-        with:
-          creds: |
-            {
-              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-            }
+  #     - name: az login
+  #       uses: Azure/login@v1
+  #       with:
+  #         creds: |
+  #           {
+  #             "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+  #             "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+  #             "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+  #             "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+  #           }
 
-      - name: deploy
-        uses: Azure/functions-action@v1.3.2
-        with:
-          package: ./dist
-          app-name: func-${{ github.workflow }}-westus2-stg
+  #     - name: deploy
+  #       uses: Azure/functions-action@v1.3.2
+  #       with:
+  #         package: ./dist
+  #         app-name: func-${{ github.workflow }}-westus2-stg
 
   deploy_prod_westeurope:
     if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
