@@ -57,7 +57,7 @@ namespace MarsOffice.Qeeps.Notifications
                     Id = "Notifications",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
                     }
                 };
@@ -153,7 +153,7 @@ namespace MarsOffice.Qeeps.Notifications
                     Id = "Notifications",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
                     }
                 };
@@ -209,7 +209,7 @@ namespace MarsOffice.Qeeps.Notifications
                     Id = "Notifications",
                     PartitionKey = new PartitionKeyDefinition
                     {
-                        Version = PartitionKeyDefinitionVersion.V1,
+                        Version = PartitionKeyDefinitionVersion.V2,
                         Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/UserId" })
                     }
                 };
