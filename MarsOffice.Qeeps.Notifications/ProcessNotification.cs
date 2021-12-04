@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
-using MarsOffice.Qeeps.Access.Abstractions;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
 using Microsoft.AspNetCore.SignalR;
@@ -30,7 +28,6 @@ namespace MarsOffice.Qeeps.Notifications
     public class ProcessNotification
     {
         private readonly IConfiguration _config;
-        private readonly HttpClient _accessClient;
         private readonly ISendGridClient _sendGridClient;
         private readonly WebPushClient _webPushClient;
         private readonly IValidator<RequestNotificationDto> _validator;
@@ -38,11 +35,10 @@ namespace MarsOffice.Qeeps.Notifications
         private readonly VapidDetails _vapidDetails;
         private readonly IMapper _mapper;
 
-        public ProcessNotification(IConfiguration config, IHttpClientFactory httpClientFactory,
+        public ProcessNotification(IConfiguration config,
             ISendGridClient sendGridClient, IValidator<RequestNotificationDto> validator, IMapper mapper)
         {
             _config = config;
-            _accessClient = httpClientFactory.CreateClient("access");
             _sendGridClient = sendGridClient;
             _validator = validator;
             _templates = _config.GetSection("Templates").Get<IEnumerable<Template>>();
@@ -123,27 +119,19 @@ namespace MarsOffice.Qeeps.Notifications
                 }
             }
 
-            var getUsersResponse = await _accessClient.PostAsJsonAsync("/api/access/users", dto.RecipientUserIds);
-            getUsersResponse.EnsureSuccessStatusCode();
-            var getUsersJson = await getUsersResponse.Content.ReadAsStringAsync();
-            var userDtos = JsonConvert.DeserializeObject<IEnumerable<UserDto>>(getUsersJson, new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            });
 
-            if (userDtos == null || !userDtos.Any())
+
+            if (dto.Recipients == null || !dto.Recipients.Any())
             {
                 return;
             }
 
-            foreach (var userDto in userDtos)
+            foreach (var foundUser in dto.Recipients)
             {
                 var lang = "ro";
-                var foundUser = userDtos.FirstOrDefault(x => x.Id == userDto.Id);
-                var foundPref = foundUser?.UserPreferences;
-                if (foundPref != null && !string.IsNullOrEmpty(foundPref.PreferredLanguage))
+                if (!string.IsNullOrEmpty(foundUser.PreferredLanguage))
                 {
-                    lang = foundPref.PreferredLanguage;
+                    lang = foundUser.PreferredLanguage;
                 }
                 else
                 {
@@ -159,7 +147,7 @@ namespace MarsOffice.Qeeps.Notifications
                 {
                     var notificationEntity = new NotificationEntity
                     {
-                        UserId = userDto.Id,
+                        UserId = foundUser.UserId,
                         AbsoluteRouteUrl = dto.AbsoluteRouteUrl,
                         CreatedDate = DateTime.UtcNow,
                         IsRead = false,
@@ -171,14 +159,14 @@ namespace MarsOffice.Qeeps.Notifications
                     var uri = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
                     var insertReply = await notificationsClient.CreateDocumentAsync(uri, notificationEntity, new RequestOptions
                     {
-                        PartitionKey = new PartitionKey(userDto.Id)
+                        PartitionKey = new PartitionKey(foundUser.UserId)
                     });
                     notificationEntity.Id = insertReply.Resource.Id;
 
                     var notificationDto = _mapper.Map<NotificationDto>(notificationEntity);
 
                     // SIGNALR
-                    await SendSignalrNotification(userDto.Id, notificationDto);
+                    await SendSignalrNotification(foundUser.UserId, notificationDto);
 
                     // PUSH
                     var pushSubs = new List<PushSubscriptionEntity>();
@@ -187,7 +175,7 @@ namespace MarsOffice.Qeeps.Notifications
                         var col = UriFactory.CreateDocumentCollectionUri("notifications", "PushSubscriptions");
                         var pushSubscriptionsQuery = pushSubscriptionsClient.CreateDocumentQuery<PushSubscriptionEntity>(col, new FeedOptions
                         {
-                            PartitionKey = new PartitionKey(userDto.Id)
+                            PartitionKey = new PartitionKey(foundUser.UserId)
                         }).OrderByDescending(x => x.CreatedDate).Take(10)
                         .AsDocumentQuery();
 
@@ -262,7 +250,7 @@ namespace MarsOffice.Qeeps.Notifications
                                 var docUri = UriFactory.CreateDocumentUri("notifications", "PushSubscriptions", pushSub.Id);
                                 await pushSubscriptionsClient.DeleteDocumentAsync(docUri, new RequestOptions
                                 {
-                                    PartitionKey = new PartitionKey(userDto.Id)
+                                    PartitionKey = new PartitionKey(foundUser.UserId)
                                 });
                             }
                         }
@@ -270,20 +258,20 @@ namespace MarsOffice.Qeeps.Notifications
                 }
 
 
-                if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(userDto.Email))
+                if (dto.NotificationTypes.Contains(NotificationType.Email) && !string.IsNullOrEmpty(foundUser.Email))
                 {
                     try
                     {
                         var sgm = new SendGridMessage();
                         sgm.SetSubject(foundTemplate.Title);
                         sgm.SetFrom(_config["FromEmail"], _config["FromName"]);
-                        sgm.AddTo(userDto.Email);
+                        sgm.AddTo(foundUser.Email);
                         sgm.AddContent(MimeType.Html, foundTemplate.Message);
                         await _sendGridClient.SendEmailAsync(sgm);
                     }
                     catch (Exception e)
                     {
-                        logger.LogError(e, "Email sending failed: " + userDto.Email);
+                        logger.LogError(e, "Email sending failed: " + foundUser.Email);
                     }
                 }
             }
