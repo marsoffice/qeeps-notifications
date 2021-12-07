@@ -113,8 +113,17 @@ namespace MarsOffice.Qeeps.Notifications
                 {
                     foreach (var kvp in dto.PlaceholderData)
                     {
-                        t.Title = t.Title.Replace("{{" + kvp.Key + "}}", kvp.Value);
-                        t.Message = t.Message.Replace("{{" + kvp.Key + "}}", kvp.Value);
+                        string value = null;
+                        if (kvp.Key.ToLower().Contains("link"))
+                        {
+                            value = _config["UiUrl"] + kvp.Value;
+                        }
+                        else
+                        {
+                            value = kvp.Value;
+                        }
+                        t.Title = t.Title.Replace("{{" + kvp.Key + "}}", value);
+                        t.Message = t.Message.Replace("{{" + kvp.Key + "}}", value);
                     }
                 }
             }
