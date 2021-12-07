@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -173,6 +174,7 @@ namespace MarsOffice.Qeeps.Notifications
                     notificationEntity.Id = insertReply.Resource.Id;
 
                     var notificationDto = _mapper.Map<NotificationDto>(notificationEntity);
+                    notificationDto.Message = StripHtml(notificationDto.Message);
 
                     // SIGNALR
                     await SendSignalrNotification(foundUser.UserId, notificationDto);
@@ -208,7 +210,7 @@ namespace MarsOffice.Qeeps.Notifications
                             Notification = new WebPushInnerNotification
                             {
                                 Title = foundTemplate.Title,
-                                Body = foundTemplate.Message,
+                                Body = StripHtml(foundTemplate.Message),
                                 Vibrate = _config.GetValue<IEnumerable<int>>("Vibrate"),
                                 Icon = _config["Icon"],
                                 RequireInteraction = false,
@@ -308,6 +310,15 @@ namespace MarsOffice.Qeeps.Notifications
                 using var hubContext = await serviceManager.CreateHubContextAsync("main", ct == null ? CancellationToken.None : ct.Value);
                 await hubContext.Clients.User(userId).SendAsync("notificationReceived", payload, ct == null ? CancellationToken.None : ct.Value);
             }
+        }
+
+        private static string StripHtml(string v)
+        {
+            if (string.IsNullOrEmpty(v))
+            {
+                return v;
+            }
+            return Regex.Replace(v, @"<[^>]*>", String.Empty);
         }
     }
 }
