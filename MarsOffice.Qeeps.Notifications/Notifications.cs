@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using MarsOffice.Qeeps.Microfunction;
+using MarsOffice.Microfunction;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
 using Microsoft.AspNetCore.Http;
@@ -64,7 +64,7 @@ namespace MarsOffice.Qeeps.Notifications
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
 #endif
 
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 var uid = principal.FindFirstValue("id");
 
                 int page = req.Query.ContainsKey("page") ? int.Parse(req.Query["page"].ToString()) : 1;
@@ -159,7 +159,7 @@ namespace MarsOffice.Qeeps.Notifications
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
 #endif
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 var uid = principal.FindFirstValue("id");
                 var notificationId = req.RouteValues["id"].ToString();
                 var docUri = UriFactory.CreateDocumentUri("notifications", "Notifications", notificationId);
@@ -215,7 +215,7 @@ namespace MarsOffice.Qeeps.Notifications
                 };
                 await client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri("notifications"), colNotif);
 #endif
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 var uid = principal.FindFirstValue("id");
                 var col = UriFactory.CreateDocumentCollectionUri("notifications", "Notifications");
 

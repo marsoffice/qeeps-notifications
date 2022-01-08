@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using MarsOffice.Qeeps.Microfunction;
+using MarsOffice.Microfunction;
 using MarsOffice.Qeeps.Notifications.Abstractions;
 using MarsOffice.Qeeps.Notifications.Entities;
 using Microsoft.AspNetCore.Http;
@@ -64,7 +64,7 @@ namespace MarsOffice.Qeeps.Notifications
 #endif
 
                 pushSubscriptionsClient.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 using var streamReader = new StreamReader(req.Body);
                 var payload = JsonConvert.DeserializeObject<PushSubscriptionDto>(
                     await streamReader.ReadToEndAsync(),
@@ -121,7 +121,7 @@ namespace MarsOffice.Qeeps.Notifications
 
                 client.ConnectionPolicy.UseMultipleWriteLocations = _config.GetValue<bool>("multimasterdatabase");
 
-                var principal = QeepsPrincipal.Parse(req);
+                var principal = MarsOfficePrincipal.Parse(req);
                 using var streamReader = new StreamReader(req.Body);
                 var payload = JsonConvert.DeserializeObject<PushSubscriptionDto>(
                     await streamReader.ReadToEndAsync(),
